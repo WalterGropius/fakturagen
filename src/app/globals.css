@@ -1,0 +1,239 @@
+@import "tailwindcss";
+
+/* Tmavý režim řízený třídou .dark na <html> */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+  Humanistická paleta — teplé „papírové" neutrály, klidný akcent.
+  Akcentní barvy (--accent*) přepisuje ThemeProvider podle nastavení.
+*/
+:root {
+  --background: oklch(0.99 0.006 83);
+  --foreground: oklch(0.24 0.012 60);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.24 0.012 60);
+  --muted: oklch(0.965 0.007 83);
+  --muted-foreground: oklch(0.52 0.012 65);
+  --border: oklch(0.9 0.008 78);
+  --input: oklch(0.94 0.008 78);
+  --ring: var(--accent);
+
+  --accent: oklch(0.62 0.15 40);
+  --accent-soft: oklch(0.95 0.03 50);
+  --accent-foreground: oklch(0.99 0.01 60);
+
+  --success: oklch(0.6 0.12 150);
+  --success-soft: oklch(0.95 0.04 150);
+  --warning: oklch(0.75 0.14 75);
+  --warning-soft: oklch(0.96 0.05 85);
+  --danger: oklch(0.6 0.2 25);
+  --danger-soft: oklch(0.95 0.04 25);
+
+  --radius: 0.85rem;
+}
+
+.dark {
+  --background: oklch(0.19 0.008 65);
+  --foreground: oklch(0.94 0.006 83);
+  --card: oklch(0.235 0.009 65);
+  --card-foreground: oklch(0.94 0.006 83);
+  --muted: oklch(0.27 0.009 65);
+  --muted-foreground: oklch(0.7 0.011 72);
+  --border: oklch(0.32 0.009 65);
+  --input: oklch(0.31 0.009 65);
+
+  --accent-soft: oklch(0.32 0.05 50);
+  --success-soft: oklch(0.3 0.05 150);
+  --warning-soft: oklch(0.33 0.05 85);
+  --danger-soft: oklch(0.33 0.06 25);
+}
+
+/* Akcentní barvy podle data-accent (nastavení vzhledu) */
+:root[data-accent="terracotta"] {
+  --accent: oklch(0.62 0.15 40);
+  --accent-soft: oklch(0.95 0.03 50);
+  --accent-foreground: oklch(0.99 0.01 60);
+}
+:root[data-accent="olive"] {
+  --accent: oklch(0.55 0.08 130);
+  --accent-soft: oklch(0.95 0.03 128);
+  --accent-foreground: oklch(0.99 0.01 128);
+}
+:root[data-accent="indigo"] {
+  --accent: oklch(0.55 0.16 264);
+  --accent-soft: oklch(0.95 0.03 264);
+  --accent-foreground: oklch(0.99 0.01 264);
+}
+:root[data-accent="teal"] {
+  --accent: oklch(0.58 0.09 195);
+  --accent-soft: oklch(0.95 0.03 195);
+  --accent-foreground: oklch(0.99 0.01 195);
+}
+:root[data-accent="plum"] {
+  --accent: oklch(0.52 0.14 340);
+  --accent-soft: oklch(0.95 0.03 340);
+  --accent-foreground: oklch(0.99 0.01 340);
+}
+:root[data-accent="slate"] {
+  --accent: oklch(0.46 0.03 262);
+  --accent-soft: oklch(0.94 0.012 262);
+  --accent-foreground: oklch(0.99 0.005 262);
+}
+
+.dark[data-accent="terracotta"] {
+  --accent: oklch(0.68 0.14 45);
+  --accent-soft: oklch(0.34 0.05 50);
+}
+.dark[data-accent="olive"] {
+  --accent: oklch(0.66 0.1 130);
+  --accent-soft: oklch(0.33 0.05 128);
+}
+.dark[data-accent="indigo"] {
+  --accent: oklch(0.66 0.14 264);
+  --accent-soft: oklch(0.34 0.06 264);
+}
+.dark[data-accent="teal"] {
+  --accent: oklch(0.68 0.1 195);
+  --accent-soft: oklch(0.33 0.05 195);
+}
+.dark[data-accent="plum"] {
+  --accent: oklch(0.64 0.13 340);
+  --accent-soft: oklch(0.34 0.055 340);
+}
+.dark[data-accent="slate"] {
+  --accent: oklch(0.7 0.03 262);
+  --accent-soft: oklch(0.33 0.02 262);
+  --accent-foreground: oklch(0.2 0.01 262);
+}
+
+/* Výběr písma podle data-font */
+:root[data-font="inter"] {
+  --app-font: var(--font-inter);
+}
+:root[data-font="manrope"] {
+  --app-font: var(--font-manrope);
+}
+:root[data-font="plex"] {
+  --app-font: var(--font-plex);
+}
+:root[data-font="geist"] {
+  --app-font: var(--font-geist-sans);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-foreground: var(--accent-foreground);
+
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+
+  --font-sans: var(--app-font, var(--font-inter)), ui-sans-serif, system-ui,
+    -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-display: var(--font-fraunces), Georgia, "Times New Roman", serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 0.35rem);
+  --radius-2xl: calc(var(--radius) + 0.7rem);
+}
+
+* {
+  border-color: var(--border);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  font-feature-settings: "cv11", "ss01";
+}
+
+::selection {
+  background: var(--accent);
+  color: var(--accent-foreground);
+}
+
+/* Jemný, tenký scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 999px;
+  border: 3px solid var(--background);
+}
+
+/* Číslice se zarovnanou šířkou — hezké tabulky částek */
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Plynulé zamlžené zjemnění */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.animate-in {
+  animation: fade-in 0.4s ease both;
+}
+
+/* ---- Tisk / PDF ---- */
+@media print {
+  @page {
+    size: A4;
+    margin: 14mm 14mm 12mm 14mm;
+  }
+  html,
+  body {
+    background: #fff;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .no-print {
+    display: none !important;
+  }
+  .invoice-paper {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .print-page {
+    box-shadow: none !important;
+    border: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+}
