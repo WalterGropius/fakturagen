@@ -55,6 +55,8 @@ export function InvoiceEditor({
   const router = useRouter();
   const clients = useStore((s) => s.clients);
   const logo = useStore((s) => s.settings.appearance.logo);
+  const docAppearance = useStore((s) => s.settings.appearance.document);
+  const accent = useStore((s) => s.settings.appearance.accent);
   const numbering = useStore((s) => s.settings.numbering);
   const addInvoice = useStore((s) => s.addInvoice);
   const updateInvoice = useStore((s) => s.updateInvoice);
@@ -654,7 +656,12 @@ export function InvoiceEditor({
         </div>
         <div className="overflow-hidden rounded-2xl border border-border shadow-sm">
           <div className="max-h-[80dvh] overflow-y-auto bg-neutral-100 p-3 dark:bg-neutral-900">
-            <InvoiceDocument invoice={draft} logo={logo} />
+            <InvoiceDocument
+              invoice={draft}
+              logo={logo}
+              appearance={docAppearance}
+              accent={accent}
+            />
           </div>
         </div>
       </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import type { Invoice } from "@/lib/types";
 import { useStore, clientToParty } from "@/lib/store";
@@ -27,21 +27,22 @@ function NovaFakturaInner() {
   const getClient = useStore((s) => s.getClient);
   const searchParams = useSearchParams();
   const klientId = searchParams.get("klient");
-  const [initial, setInitial] = useState<Invoice | null>(null);
 
-  useEffect(() => {
-    if (!hydrated || initial) return;
+  // Koncept vzniká jednou — až se načtou nastavení. Další změny nastavení
+  // do rozepsané faktury nezasahují, jinak by přepsaly, co uživatel vyplnil.
+  const initial = useMemo<Invoice | null>(() => {
+    if (!hydrated) return null;
     const draft = draftFromSettings(settings);
     if (klientId) {
-      const c = getClient(klientId);
-      if (c) {
-        draft.client = clientToParty(c);
-        draft.clientId = c.id;
+      const client = getClient(klientId);
+      if (client) {
+        draft.client = clientToParty(client);
+        draft.clientId = client.id;
       }
     }
-    setInitial(draft);
+    return draft;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hydrated]);
+  }, [hydrated, klientId]);
 
   return (
     <div>

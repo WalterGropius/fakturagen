@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -53,25 +53,33 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
   );
 }
 
+const DARK_QUERY = "(prefers-color-scheme: dark)";
+
+function subscribeSystemTheme(onChange: () => void) {
+  const media = window.matchMedia(DARK_QUERY);
+  media.addEventListener("change", onChange);
+  return () => media.removeEventListener("change", onChange);
+}
+
 function ThemeToggle() {
   const theme = useStore((s) => s.settings.appearance.theme);
-  const [isDark, setIsDark] = useState(false);
-
-  useEffect(() => {
-    setIsDark(document.documentElement.classList.contains("dark"));
-  }, [theme]);
+  // Systémový režim je externí zdroj pravdy — odebíráme ho přímo,
+  // ať nemusíme po vykreslení dopočítávat stav z třídy na <html>.
+  const systemDark = useSyncExternalStore(
+    subscribeSystemTheme,
+    () => window.matchMedia(DARK_QUERY).matches,
+    () => false,
+  );
+  const isDark = theme === "dark" || (theme === "system" && systemDark);
 
   const toggle = () => {
-    const next = document.documentElement.classList.contains("dark")
-      ? "light"
-      : "dark";
+    const next = isDark ? "light" : "dark";
     useStore.setState((s) => ({
       settings: {
         ...s.settings,
         appearance: { ...s.settings.appearance, theme: next },
       },
     }));
-    setIsDark(next === "dark");
   };
 
   return (
@@ -123,11 +131,8 @@ function SidebarInner({ onNavigate }: { onNavigate?: () => void }) {
 }
 
 export function AppShell({ children }: { children: React.ReactNode }) {
+  // Zásuvku zavírá samotná navigace (onNavigate u odkazů), ne efekt na cestě.
   const [open, setOpen] = useState(false);
-  const pathname = usePathname();
-
-  // Zavřít mobilní menu při změně stránky
-  useEffect(() => setOpen(false), [pathname]);
 
   return (
     <div className="flex min-h-dvh">
