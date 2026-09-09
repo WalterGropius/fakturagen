@@ -3,7 +3,11 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { Client, Invoice, InvoiceStatus, Party, Settings } from "./types";
-import { DEFAULT_ACCENT, DEFAULT_FONT } from "./constants";
+import {
+  DEFAULT_ACCENT,
+  DEFAULT_DOCUMENT_APPEARANCE,
+  DEFAULT_FONT,
+} from "./constants";
 import { uid } from "./invoice";
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -27,6 +31,7 @@ export const DEFAULT_SETTINGS: Settings = {
     accent: DEFAULT_ACCENT,
     font: DEFAULT_FONT,
     logo: undefined,
+    document: DEFAULT_DOCUMENT_APPEARANCE,
   },
   invoice: {
     dueDays: 14,
@@ -47,6 +52,35 @@ export const DEFAULT_SETTINGS: Settings = {
   },
   onboarded: false,
 };
+
+/**
+ * Doplní chybějící pole z výchozího nastavení. Používá se při načtení
+ * z localStorage i při importu zálohy — starší soubory nemusí mít
+ * novější volby (třeba vzhled dokumentu).
+ */
+export function normalizeSettings(raw: unknown): Settings {
+  const input = (raw ?? {}) as Partial<Settings>;
+  const appearance = input.appearance ?? DEFAULT_SETTINGS.appearance;
+  return {
+    ...DEFAULT_SETTINGS,
+    ...input,
+    supplier: {
+      ...DEFAULT_SETTINGS.supplier,
+      ...input.supplier,
+      bank: { ...DEFAULT_SETTINGS.supplier.bank, ...input.supplier?.bank },
+    },
+    appearance: {
+      ...DEFAULT_SETTINGS.appearance,
+      ...appearance,
+      document: {
+        ...DEFAULT_DOCUMENT_APPEARANCE,
+        ...appearance.document,
+      },
+    },
+    invoice: { ...DEFAULT_SETTINGS.invoice, ...input.invoice },
+    numbering: { ...DEFAULT_SETTINGS.numbering, ...input.numbering },
+  };
+}
 
 interface StoreState {
   settings: Settings;
@@ -139,7 +173,7 @@ export const useStore = create<StoreState>()(
 
       importData: (data) =>
         set((s) => ({
-          settings: data.settings ? { ...DEFAULT_SETTINGS, ...data.settings } : s.settings,
+          settings: data.settings ? normalizeSettings(data.settings) : s.settings,
           clients: data.clients ?? s.clients,
           invoices: data.invoices ?? s.invoices,
         })),
@@ -148,12 +182,22 @@ export const useStore = create<StoreState>()(
     }),
     {
       name: "fakturka-v1",
-      version: 1,
+      version: 2,
       partialize: (s) => ({
         settings: s.settings,
         clients: s.clients,
         invoices: s.invoices,
       }),
+      // Starší uložená nastavení nemají všechna pole (např. vzhled faktury).
+      // Doplníme je z výchozích, ať aplikace nespadne na chybějícím klíči.
+      migrate: (persisted) => {
+        const state = (persisted ?? {}) as Partial<StoreState>;
+        return {
+          settings: normalizeSettings(state.settings),
+          clients: state.clients ?? [],
+          invoices: state.invoices ?? [],
+        };
+      },
       onRehydrateStorage: () => (state) => {
         state?.setHasHydrated(true);
       },

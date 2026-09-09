@@ -11,7 +11,9 @@ import {
   Loader2,
   ArrowRight,
   ChevronLeft,
+  ChevronDown,
   Info,
+  UserPlus,
 } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { useHydrated } from "@/lib/use-hydrated";
@@ -20,27 +22,42 @@ import {
   parsedToInvoice,
   type ParsedInvoice,
 } from "@/lib/pdf-import";
+import type { ParsedParty } from "@/lib/pdf-parse";
 import { formatMoney, czPlural } from "@/lib/format";
 import { PageHeader } from "@/components/page-header";
-import { Button, Card, Input, Badge } from "@/components/ui";
+import { Button, Card, Input, Badge, Switch } from "@/components/ui";
 import { cn } from "@/lib/cn";
 
 interface Row extends ParsedInvoice {
   include: boolean;
   duplicate: "hash" | "number" | null;
+  expanded: boolean;
+}
+
+/** Pole, která se z PDF nepovedla vyčíst — ať uživatel ví, co dohlédnout. */
+function missingFields(row: Row): string[] {
+  const missing: string[] = [];
+  if (!row.found.number) missing.push("číslo");
+  if (!row.found.client) missing.push("odběratel");
+  if (!row.found.issueDate) missing.push("datum");
+  if (!row.found.total) missing.push("částka");
+  return missing;
 }
 
 export default function ImportPage() {
   const hydrated = useHydrated();
   const invoices = useStore((s) => s.invoices);
+  const clients = useStore((s) => s.clients);
   const settings = useStore((s) => s.settings);
   const addInvoice = useStore((s) => s.addInvoice);
+  const addClient = useStore((s) => s.addClient);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const [dragging, setDragging] = useState(false);
   const [rows, setRows] = useState<Row[]>([]);
   const [errors, setErrors] = useState<string[]>([]);
+  const [saveClients, setSaveClients] = useState(true);
   const [importedCount, setImportedCount] = useState<number | null>(null);
 
   const handleFiles = async (fileList: FileList | null) => {
@@ -68,9 +85,15 @@ export default function ImportPage() {
           duplicate = "number";
         }
         batchHashes.add(parsed.hash);
-        newRows.push({ ...parsed, include: duplicate !== "hash", duplicate });
-      } catch {
-        newErrors.push(`Soubor „${file.name}" se nepodařilo přečíst.`);
+        newRows.push({
+          ...parsed,
+          include: duplicate !== "hash",
+          duplicate,
+          expanded: false,
+        });
+      } catch (e) {
+        const reason = e instanceof Error ? e.message : "Soubor se nepodařilo přečíst.";
+        newErrors.push(`„${file.name}“ — ${reason}`);
       }
     }
 
@@ -82,13 +105,41 @@ export default function ImportPage() {
 
   const update = (i: number, patch: Partial<Row>) =>
     setRows((prev) => prev.map((r, idx) => (idx === i ? { ...r, ...patch } : r)));
+  const updateClient = (i: number, patch: Partial<ParsedParty>) =>
+    setRows((prev) =>
+      prev.map((r, idx) =>
+        idx === i ? { ...r, client: { ...r.client, ...patch } } : r,
+      ),
+    );
   const remove = (i: number) =>
     setRows((prev) => prev.filter((_, idx) => idx !== i));
 
   const runImport = () => {
     const chosen = rows.filter((r) => r.include && r.duplicate !== "hash");
-    for (const r of chosen) {
-      addInvoice(parsedToInvoice(r, settings));
+    const knownClients = new Map(
+      clients.map((c) => [(c.ico || c.name).trim().toLowerCase(), c]),
+    );
+
+    for (const row of chosen) {
+      const invoice = parsedToInvoice(row, settings);
+      const key = (row.client.ico || row.client.name).trim().toLowerCase();
+      if (saveClients && row.client.name && key && !knownClients.has(key)) {
+        const created = addClient({
+          name: row.client.name,
+          street: row.client.street,
+          city: row.client.city,
+          zip: row.client.zip,
+          ico: row.client.ico || undefined,
+          dic: row.client.dic || undefined,
+          email: row.client.email || undefined,
+          phone: row.client.phone || undefined,
+        });
+        knownClients.set(key, created);
+        invoice.clientId = created.id;
+      } else if (key) {
+        invoice.clientId = knownClients.get(key)?.id;
+      }
+      addInvoice(invoice);
     }
     setImportedCount(chosen.length);
     setRows([]);
@@ -178,7 +229,7 @@ export default function ImportPage() {
         <div className="mt-4 space-y-1">
           {errors.map((e, i) => (
             <p key={i} className="flex items-center gap-1.5 text-sm text-danger">
-              <TriangleAlert className="size-4" /> {e}
+              <TriangleAlert className="size-4 shrink-0" /> {e}
             </p>
           ))}
         </div>
@@ -202,91 +253,241 @@ export default function ImportPage() {
           </div>
 
           <div className="mt-3 space-y-3">
-            {rows.map((r, i) => (
-              <Card
-                key={r.hash + i}
-                className={cn(
-                  "p-4",
-                  r.duplicate === "hash" && "opacity-60",
-                )}
-              >
-                <div className="mb-3 flex items-center justify-between gap-2">
-                  <label className="flex items-center gap-2 text-sm font-medium">
-                    <input
-                      type="checkbox"
-                      checked={r.include}
-                      disabled={r.duplicate === "hash"}
-                      onChange={(e) => update(i, { include: e.target.checked })}
-                      className="size-4 rounded"
-                      style={{ accentColor: "var(--accent)" }}
-                    />
-                    <FileText className="size-4 text-muted-foreground" />
-                    <span className="max-w-[180px] truncate text-muted-foreground">
-                      {r.fileName}
-                    </span>
-                  </label>
-                  <div className="flex items-center gap-2">
-                    {r.duplicate === "hash" && (
-                      <Badge tone="neutral">Již importováno</Badge>
-                    )}
-                    {r.duplicate === "number" && (
-                      <Badge tone="warning">Číslo už existuje</Badge>
-                    )}
-                    <button
-                      onClick={() => remove(i)}
-                      className="text-muted-foreground hover:text-danger"
-                      aria-label="Odebrat"
-                    >
-                      <X className="size-4" />
-                    </button>
+            {rows.map((r, i) => {
+              const missing = missingFields(r);
+              return (
+                <Card
+                  key={r.hash + i}
+                  className={cn("p-4", r.duplicate === "hash" && "opacity-60")}
+                >
+                  <div className="mb-3 flex items-center justify-between gap-2">
+                    <label className="flex items-center gap-2 text-sm font-medium">
+                      <input
+                        type="checkbox"
+                        checked={r.include}
+                        disabled={r.duplicate === "hash"}
+                        onChange={(e) => update(i, { include: e.target.checked })}
+                        className="size-4 rounded"
+                        style={{ accentColor: "var(--accent)" }}
+                      />
+                      <FileText className="size-4 text-muted-foreground" />
+                      <span className="max-w-[180px] truncate text-muted-foreground">
+                        {r.fileName}
+                      </span>
+                    </label>
+                    <div className="flex items-center gap-2">
+                      {missing.length > 0 && (
+                        <Badge tone="warning">
+                          Zkontrolujte: {missing.join(", ")}
+                        </Badge>
+                      )}
+                      {r.duplicate === "hash" && (
+                        <Badge tone="neutral">Již importováno</Badge>
+                      )}
+                      {r.duplicate === "number" && (
+                        <Badge tone="warning">Číslo už existuje</Badge>
+                      )}
+                      <button
+                        onClick={() => remove(i)}
+                        className="text-muted-foreground hover:text-danger"
+                        aria-label="Odebrat"
+                      >
+                        <X className="size-4" />
+                      </button>
+                    </div>
                   </div>
-                </div>
 
-                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                  <label className="text-xs text-muted-foreground">
-                    Číslo faktury
-                    <Input
-                      value={r.number}
-                      onChange={(e) => update(i, { number: e.target.value })}
-                      className="mt-1"
-                    />
-                  </label>
-                  <label className="text-xs text-muted-foreground lg:col-span-2">
-                    Odběratel
-                    <Input
-                      value={r.clientName}
-                      onChange={(e) => update(i, { clientName: e.target.value })}
-                      className="mt-1"
-                    />
-                  </label>
-                  <label className="text-xs text-muted-foreground">
-                    Datum vystavení
-                    <Input
-                      type="date"
-                      value={r.issueDate}
-                      onChange={(e) => update(i, { issueDate: e.target.value })}
-                      className="mt-1"
-                    />
-                  </label>
-                  <label className="text-xs text-muted-foreground">
-                    Částka celkem
-                    <Input
-                      type="number"
-                      step="any"
-                      value={r.total}
-                      onChange={(e) =>
-                        update(i, { total: Number(e.target.value) || 0 })
-                      }
-                      className="mt-1"
-                    />
-                  </label>
-                  <div className="flex items-end text-sm text-muted-foreground">
-                    {formatMoney(r.total, r.currency)}
+                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                    <label className="text-xs text-muted-foreground">
+                      Číslo faktury
+                      <Input
+                        value={r.number}
+                        onChange={(e) => update(i, { number: e.target.value })}
+                        className="mt-1"
+                      />
+                    </label>
+                    <label className="text-xs text-muted-foreground lg:col-span-2">
+                      Odběratel
+                      <Input
+                        value={r.client.name}
+                        onChange={(e) => updateClient(i, { name: e.target.value })}
+                        className="mt-1"
+                        placeholder="Název firmy"
+                      />
+                    </label>
+                    <label className="text-xs text-muted-foreground">
+                      IČO odběratele
+                      <Input
+                        value={r.client.ico}
+                        onChange={(e) => updateClient(i, { ico: e.target.value })}
+                        className="mt-1"
+                      />
+                    </label>
+                    <label className="text-xs text-muted-foreground">
+                      Datum vystavení
+                      <Input
+                        type="date"
+                        value={r.issueDate}
+                        onChange={(e) => update(i, { issueDate: e.target.value })}
+                        className="mt-1"
+                      />
+                    </label>
+                    <label className="text-xs text-muted-foreground">
+                      Datum splatnosti
+                      <Input
+                        type="date"
+                        value={r.dueDate}
+                        onChange={(e) => update(i, { dueDate: e.target.value })}
+                        className="mt-1"
+                      />
+                    </label>
+                    <label className="text-xs text-muted-foreground">
+                      Částka celkem
+                      <Input
+                        type="number"
+                        step="any"
+                        value={r.total}
+                        onChange={(e) =>
+                          update(i, { total: Number(e.target.value) || 0 })
+                        }
+                        className="mt-1"
+                      />
+                    </label>
+                    <div className="flex items-end pb-2.5 text-sm font-medium tabular">
+                      {formatMoney(r.total, r.currency)}
+                    </div>
                   </div>
-                </div>
-              </Card>
-            ))}
+
+                  <button
+                    onClick={() => update(i, { expanded: !r.expanded })}
+                    className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+                  >
+                    <ChevronDown
+                      className={cn(
+                        "size-4 transition-transform",
+                        r.expanded && "rotate-180",
+                      )}
+                    />
+                    Adresa a položky
+                    {r.items.length > 0 && (
+                      <span className="text-accent">
+                        · {r.items.length}{" "}
+                        {czPlural(r.items.length, "položka", "položky", "položek")}
+                      </span>
+                    )}
+                  </button>
+
+                  {r.expanded && (
+                    <div className="mt-3 space-y-3 border-t border-border pt-3">
+                      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                        <label className="text-xs text-muted-foreground lg:col-span-2">
+                          Ulice a číslo
+                          <Input
+                            value={r.client.street}
+                            onChange={(e) =>
+                              updateClient(i, { street: e.target.value })
+                            }
+                            className="mt-1"
+                          />
+                        </label>
+                        <label className="text-xs text-muted-foreground">
+                          PSČ
+                          <Input
+                            value={r.client.zip}
+                            onChange={(e) => updateClient(i, { zip: e.target.value })}
+                            className="mt-1"
+                          />
+                        </label>
+                        <label className="text-xs text-muted-foreground">
+                          Město
+                          <Input
+                            value={r.client.city}
+                            onChange={(e) =>
+                              updateClient(i, { city: e.target.value })
+                            }
+                            className="mt-1"
+                          />
+                        </label>
+                        <label className="text-xs text-muted-foreground">
+                          DIČ odběratele
+                          <Input
+                            value={r.client.dic}
+                            onChange={(e) => updateClient(i, { dic: e.target.value })}
+                            className="mt-1"
+                          />
+                        </label>
+                        <label className="text-xs text-muted-foreground">
+                          Variabilní symbol
+                          <Input
+                            value={r.variableSymbol}
+                            onChange={(e) =>
+                              update(i, {
+                                variableSymbol: e.target.value.replace(/\D/g, ""),
+                              })
+                            }
+                            className="mt-1"
+                          />
+                        </label>
+                      </div>
+
+                      {r.items.length > 0 ? (
+                        <div className="overflow-x-auto rounded-xl border border-border">
+                          <table className="w-full text-xs">
+                            <thead className="bg-muted/50 text-muted-foreground">
+                              <tr>
+                                <th className="px-3 py-2 text-left font-medium">
+                                  Popis
+                                </th>
+                                <th className="px-3 py-2 text-right font-medium">
+                                  Množství
+                                </th>
+                                <th className="px-3 py-2 text-right font-medium">
+                                  J. cena
+                                </th>
+                                <th className="px-3 py-2 text-right font-medium">
+                                  Celkem
+                                </th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {r.items.map((it, idx) => (
+                                <tr key={idx} className="border-t border-border">
+                                  <td className="max-w-[320px] px-3 py-2">
+                                    {it.description}
+                                  </td>
+                                  <td className="whitespace-nowrap px-3 py-2 text-right tabular">
+                                    {it.quantity} {it.unit}
+                                  </td>
+                                  <td className="whitespace-nowrap px-3 py-2 text-right tabular">
+                                    {formatMoney(it.unitPrice, r.currency)}
+                                  </td>
+                                  <td className="whitespace-nowrap px-3 py-2 text-right tabular font-medium">
+                                    {formatMoney(it.total, r.currency)}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      ) : (
+                        <p className="text-xs text-muted-foreground">
+                          Rozpis položek se z PDF vyčíst nepodařilo — faktura
+                          dostane jednu souhrnnou položku na celou částku.
+                          Po importu ji můžete upravit.
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </Card>
+              );
+            })}
           </div>
+
+          <label className="mt-4 flex items-center gap-2.5 text-sm text-muted-foreground">
+            <Switch checked={saveClients} onChange={setSaveClients} />
+            <UserPlus className="size-4" />
+            Uložit nové odběratele mezi klienty
+          </label>
 
           <div className="mt-5 flex justify-end gap-2">
             <Button variant="ghost" onClick={() => setRows([])}>

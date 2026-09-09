@@ -1,4 +1,11 @@
-import type { PaymentMethod, Rounding } from "./types";
+import type {
+  Density,
+  DocumentAppearance,
+  InkStrength,
+  LineSpacing,
+  PaymentMethod,
+  Rounding,
+} from "./types";
 
 // Sazby DPH platné v ČR (2024+): základní 21 %, snížená 12 %, nulová.
 export const VAT_RATES = [21, 12, 0] as const;
@@ -140,3 +147,45 @@ export const FONTS: FontOption[] = [
 
 export const DEFAULT_ACCENT = "terracotta";
 export const DEFAULT_FONT = "inter";
+
+// Písma pro samotný dokument faktury. Kromě bezpatkových je tu i Fraunces
+// pro klasičtější, „úřední" vzhled dokladu.
+export const INVOICE_FONTS: FontOption[] = [
+  ...FONTS,
+  {
+    key: "fraunces",
+    label: "Fraunces",
+    variable: "var(--font-fraunces)",
+    note: "Patkové, klasické",
+  },
+];
+
+export const INK_OPTIONS: { value: InkStrength; label: string; note: string }[] = [
+  { value: "normal", label: "Běžná", note: "Jemný, tichý dokument" },
+  { value: "dark", label: "Tmavá", note: "Lépe čitelné na papíře" },
+  { value: "black", label: "Sytě černá", note: "Maximální kontrast" },
+];
+
+export const LINE_SPACING_OPTIONS: { value: LineSpacing; label: string }[] = [
+  { value: "tight", label: "Husté" },
+  { value: "normal", label: "Běžné" },
+  { value: "relaxed", label: "Volné" },
+];
+
+export const DENSITY_OPTIONS: { value: Density; label: string; note: string }[] = [
+  { value: "compact", label: "Kompaktní", note: "Víc místa na položky" },
+  { value: "normal", label: "Vyvážená", note: "Výchozí rozvržení" },
+  { value: "airy", label: "Vzdušná", note: "Více bílého místa" },
+];
+
+export const INVOICE_FONT_SIZES = [10.5, 11.5, 12.5, 13.5, 14.5];
+
+export const DEFAULT_DOCUMENT_APPEARANCE: DocumentAppearance = {
+  font: DEFAULT_FONT,
+  fontSize: 12.5,
+  lineSpacing: "normal",
+  density: "normal",
+  ink: "dark",
+  colored: true,
+  watermark: false,
+};

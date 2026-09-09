@@ -189,6 +189,199 @@ body {
   border: 3px solid var(--background);
 }
 
+/* ---------------------------------------------------------------------------
+   Papír faktury
+
+   Dokument je vždy „papírový": pevné barvy, které nezávisí na motivu aplikace.
+   Kdyby dědil --foreground a --accent-soft, v tmavém režimu by se vytiskl
+   světlý text na bílý papír a součtový box by byl nečitelný.
+
+   Vzhled řídí atributy data-* podle nastavení (sytost, písmo, řádkování,
+   hustota, barevnost). Velikosti jsou v em, takže se škálují s --paper-size.
+--------------------------------------------------------------------------- */
+.invoice-paper {
+  --paper-bg: #ffffff;
+  --paper-ink: #312d2a;
+  --paper-strong: #1e1a16;
+  --paper-muted: #6c6864;
+  --paper-line: #e0ddda;
+  --paper-soft: #f7f5f2;
+
+  --paper-accent: #a63c0c;
+  --paper-accent-ink: #812100;
+  --paper-accent-soft: #ffeae1;
+  --paper-accent-line: #e4d3ce;
+
+  --paper-size: 12.5px;
+  --paper-leading: 1.5;
+  --paper-gap: 1.35rem;
+  --paper-font: var(--app-font, var(--font-inter));
+
+  background: var(--paper-bg);
+  color: var(--paper-ink);
+  font-family: var(--paper-font), ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI", Roboto, sans-serif;
+  font-size: var(--paper-size);
+  line-height: var(--paper-leading);
+}
+
+/* Sytost písma — „tmavší písmo" pro lepší čitelnost na tiskárně */
+.invoice-paper[data-ink="dark"] {
+  --paper-ink: #1d1a17;
+  --paper-strong: #0c0806;
+  --paper-muted: #4b4743;
+  --paper-line: #cdcac6;
+}
+.invoice-paper[data-ink="black"] {
+  --paper-ink: #040303;
+  --paper-strong: #000000;
+  --paper-muted: #302d2b;
+  --paper-line: #b3b1ad;
+}
+
+/* Akcent na papíře — tmavší varianta palety, stejná ve světlém i tmavém režimu */
+.invoice-paper[data-paper-accent="olive"] {
+  --paper-accent: #546c3a;
+  --paper-accent-ink: #3a4f23;
+  --paper-accent-soft: #ecf3e6;
+  --paper-accent-line: #d5d9d1;
+}
+.invoice-paper[data-paper-accent="indigo"] {
+  --paper-accent: #325cbd;
+  --paper-accent-ink: #1c4095;
+  --paper-accent-soft: #e6f1ff;
+  --paper-accent-line: #d1d8e5;
+}
+.invoice-paper[data-paper-accent="teal"] {
+  --paper-accent: #007373;
+  --paper-accent-ink: #005555;
+  --paper-accent-soft: #e2f5f4;
+  --paper-accent-line: #cedada;
+}
+.invoice-paper[data-paper-accent="plum"] {
+  --paper-accent: #953d7c;
+  --paper-accent-ink: #72245d;
+  --paper-accent-soft: #ffe9f7;
+  --paper-accent-line: #e1d3dc;
+}
+.invoice-paper[data-paper-accent="slate"] {
+  --paper-accent: #5a6475;
+  --paper-accent-ink: #404857;
+  --paper-accent-soft: #eef0f5;
+  --paper-accent-line: #d6d7da;
+}
+
+/* Čistě černobílá faktura — šetří barevný toner a vždy se dobře kopíruje */
+.invoice-paper[data-paper-color="mono"] {
+  --paper-accent: var(--paper-strong);
+  --paper-accent-ink: var(--paper-strong);
+  --paper-accent-soft: var(--paper-soft);
+  --paper-accent-line: var(--paper-line);
+}
+
+/* Řádkování */
+.invoice-paper[data-leading="tight"] {
+  --paper-leading: 1.3;
+}
+.invoice-paper[data-leading="normal"] {
+  --paper-leading: 1.5;
+}
+.invoice-paper[data-leading="relaxed"] {
+  --paper-leading: 1.75;
+}
+
+/* Hustota bloků */
+.invoice-paper[data-density="compact"] {
+  --paper-gap: 0.85rem;
+}
+.invoice-paper[data-density="normal"] {
+  --paper-gap: 1.35rem;
+}
+.invoice-paper[data-density="airy"] {
+  --paper-gap: 1.9rem;
+}
+
+/* Písmo dokumentu — nezávislé na písmu aplikace */
+.invoice-paper[data-doc-font="inter"] {
+  --paper-font: var(--font-inter);
+}
+.invoice-paper[data-doc-font="manrope"] {
+  --paper-font: var(--font-manrope);
+}
+.invoice-paper[data-doc-font="plex"] {
+  --paper-font: var(--font-plex);
+}
+.invoice-paper[data-doc-font="geist"] {
+  --paper-font: var(--font-geist-sans);
+}
+.invoice-paper[data-doc-font="fraunces"] {
+  --paper-font: var(--font-fraunces);
+}
+
+/* --- Stavební prvky dokumentu --- */
+.inv-block {
+  margin-top: var(--paper-gap);
+}
+.inv-eyebrow {
+  font-size: 0.78em;
+  font-weight: 600;
+  letter-spacing: 0.11em;
+  line-height: 1.5;
+  text-transform: uppercase;
+  color: var(--paper-muted);
+}
+.inv-title {
+  /* Volnější prokládání, aby se neuřízly háčky a přehlásky nad velkými písmeny */
+  font-size: 2.2em;
+  font-weight: 600;
+  line-height: 1.24;
+  letter-spacing: -0.015em;
+  color: var(--paper-strong);
+}
+.inv-heading {
+  font-size: 1.45em;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--paper-strong);
+}
+.inv-strong {
+  color: var(--paper-strong);
+  font-weight: 600;
+}
+.inv-muted {
+  color: var(--paper-muted);
+}
+.inv-rule {
+  height: 1px;
+  background: var(--paper-line);
+}
+.inv-accent {
+  color: var(--paper-accent);
+}
+
+/* Dvojice popisek + hodnota v pruhu platebních údajů */
+.inv-pair {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1em;
+  min-width: 0;
+}
+.inv-pair dt {
+  font-size: 0.74em;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  line-height: 1.5;
+  text-transform: uppercase;
+  color: var(--paper-muted);
+  white-space: nowrap;
+}
+.inv-pair dd {
+  margin: 0;
+  font-weight: 500;
+  color: var(--paper-strong);
+  font-variant-numeric: tabular-nums;
+}
+
 /* Číslice se zarovnanou šířkou — hezké tabulky částek */
 .tabular {
   font-variant-numeric: tabular-nums;
@@ -213,7 +406,7 @@ body {
 @media print {
   @page {
     size: A4;
-    margin: 14mm 14mm 12mm 14mm;
+    margin: 12mm 14mm 12mm 14mm;
   }
   html,
   body {
@@ -227,6 +420,17 @@ body {
   .invoice-paper {
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
+    /* Kousek místa kolem textu, aby okraj stránky neuřízl háčky, přehlásky
+       ani přesah písmen jako „V" na levém okraji. */
+    padding: 2mm 1mm 0 !important;
+  }
+  /* Řádek tabulky ani součtový box se nesmí zlomit přes stránku. */
+  .invoice-paper tr,
+  .inv-no-break {
+    break-inside: avoid;
+  }
+  .invoice-paper thead {
+    display: table-header-group;
   }
   .print-page {
     box-shadow: none !important;

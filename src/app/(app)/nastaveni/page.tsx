@@ -16,6 +16,7 @@ import {
   Trash2,
   ImagePlus,
   Check,
+  FileText,
 } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { useHydrated } from "@/lib/use-hydrated";
@@ -40,6 +41,7 @@ import {
   Switch,
 } from "@/components/ui";
 import { AresLookup } from "@/components/ares-lookup";
+import { InvoiceAppearanceSettings } from "@/components/invoice-appearance-settings";
 import { cn } from "@/lib/cn";
 
 function Section({
@@ -90,6 +92,14 @@ export default function SettingsPage() {
     }));
   const setAppearance = (patch: Partial<Settings["appearance"]>) =>
     setSettings((p) => ({ ...p, appearance: { ...p.appearance, ...patch } }));
+  const setDocument = (patch: Partial<Settings["appearance"]["document"]>) =>
+    setSettings((p) => ({
+      ...p,
+      appearance: {
+        ...p.appearance,
+        document: { ...p.appearance.document, ...patch },
+      },
+    }));
   const setInvoice = (patch: Partial<Settings["invoice"]>) =>
     setSettings((p) => ({ ...p, invoice: { ...p.invoice, ...patch } }));
   const setNumbering = (patch: Partial<Settings["numbering"]>) =>
@@ -452,11 +462,11 @@ export default function SettingsPage() {
           </label>
         </Section>
 
-        {/* Vzhled */}
+        {/* Vzhled aplikace */}
         <Section
           icon={<Palette className="size-5" />}
-          title="Vzhled"
-          description="Přizpůsobte si aplikaci i faktury."
+          title="Vzhled aplikace"
+          description="Motiv, barva a písmo prostředí. Vzhled faktury se nastavuje níž."
         >
           <div className="space-y-6">
             <div>
@@ -590,6 +600,15 @@ export default function SettingsPage() {
               </div>
             </div>
           </div>
+        </Section>
+
+        {/* Vzhled faktury */}
+        <Section
+          icon={<FileText className="size-5" />}
+          title="Vzhled faktury"
+          description="Jak vypadá hotový doklad — písmo, sytost, řádkování a hustota."
+        >
+          <InvoiceAppearanceSettings settings={s} onChange={setDocument} />
         </Section>
 
         {/* Data */}

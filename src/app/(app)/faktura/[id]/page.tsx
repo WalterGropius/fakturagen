@@ -9,13 +9,12 @@ import {
   Copy,
   Trash2,
   CircleCheck,
-  Send,
   FileText,
 } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { useHydrated } from "@/lib/use-hydrated";
 import type { Invoice } from "@/lib/types";
-import { draftFromSettings, uid, buildInvoiceNumber } from "@/lib/invoice";
+import { uid, buildInvoiceNumber } from "@/lib/invoice";
 import { statusMeta } from "@/lib/status";
 import { formatMoney, formatDate, todayIso, addDays } from "@/lib/format";
 import { invoiceGrandTotal, variableSymbolFromNumber } from "@/lib/invoice";
@@ -29,6 +28,8 @@ export default function InvoiceDetailPage() {
   const hydrated = useHydrated();
   const invoice = useStore((s) => s.invoices.find((i) => i.id === id));
   const logo = useStore((s) => s.settings.appearance.logo);
+  const docAppearance = useStore((s) => s.settings.appearance.document);
+  const accent = useStore((s) => s.settings.appearance.accent);
   const numbering = useStore((s) => s.settings.numbering);
   const setInvoiceStatus = useStore((s) => s.setInvoiceStatus);
   const addInvoice = useStore((s) => s.addInvoice);
@@ -161,14 +162,19 @@ export default function InvoiceDetailPage() {
       </div>
 
       {/* Dokument */}
-      <Card className="print-page overflow-hidden border-border bg-neutral-100 p-3 dark:bg-neutral-900 print:border-0 print:bg-white print:p-0 print:shadow-none">
-        <div className="mx-auto max-w-[820px] rounded-xl bg-white shadow-sm print:rounded-none print:shadow-none">
-          <InvoiceDocument invoice={invoice} logo={logo} />
+      <Card className="print-page overflow-hidden border-border bg-neutral-100 p-3 dark:bg-neutral-900 print:overflow-visible print:border-0 print:bg-white print:p-0 print:shadow-none">
+        <div className="mx-auto max-w-[820px] overflow-hidden rounded-xl bg-white shadow-sm print:overflow-visible print:rounded-none print:shadow-none">
+          <InvoiceDocument
+            invoice={invoice}
+            logo={logo}
+            appearance={docAppearance}
+            accent={accent}
+          />
         </div>
       </Card>
 
       <p className="no-print mt-3 text-center text-xs text-muted-foreground">
-        Tip: v dialogu tisku zvolte „Uložit jako PDF" pro stažení souboru.
+        Tip: v dialogu tisku zvolte „Uložit jako PDF“ pro stažení souboru.
       </p>
     </div>
   );

@@ -84,11 +84,30 @@ export interface Invoice {
   sourceFileName?: string;
 }
 
+export type InkStrength = "normal" | "dark" | "black";
+export type LineSpacing = "tight" | "normal" | "relaxed";
+export type Density = "compact" | "normal" | "airy";
+
+/**
+ * Vzhled samotného dokumentu faktury — nezávisle na motivu aplikace.
+ * Faktura je papír: musí zůstat čitelná i když aplikace běží v tmavém režimu.
+ */
+export interface DocumentAppearance {
+  font: string; // klíč z INVOICE_FONTS
+  fontSize: number; // základní velikost písma v px
+  lineSpacing: LineSpacing; // řádkování
+  density: Density; // hustota bloků
+  ink: InkStrength; // sytost písma
+  colored: boolean; // barevný akcent, nebo čistě černobílá
+  watermark: boolean; // patička „Vystaveno ve Fakturce"
+}
+
 export interface Appearance {
   theme: "light" | "dark" | "system";
   accent: string; // klíč z ACCENTS
   font: string; // klíč z FONTS
   logo?: string; // data URL loga
+  document: DocumentAppearance;
 }
 
 export interface Numbering {

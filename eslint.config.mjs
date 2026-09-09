@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Vendorovaný build pdf.js — cizí minifikovaný kód nemá smysl lintovat.
+    "public/pdf.worker.min.mjs",
   ]),
 ]);
 
